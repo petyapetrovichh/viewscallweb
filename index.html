@@ -1,6 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+  // ViewsCall theme controller — runs early, independent of app code.
+  (function () {
+    window.__vcTheme = window.__vcTheme || 'system';
+    function resolve(t) {
+      if (t === 'system') {
+        return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      }
+      return t;
+    }
+    function apply() {
+      var r = resolve(window.__vcTheme);
+      var el = document.documentElement;
+      if (r === 'dark') el.setAttribute('data-theme', 'dark');
+      else el.removeAttribute('data-theme');
+    }
+    window.vcSetTheme = function (t) {
+      window.__vcTheme = t;
+      try { localStorage.setItem('vc-theme', t); } catch (e) {}
+      apply();
+      if (window.__vcOnThemeChange) window.__vcOnThemeChange(t);
+    };
+    // restore saved preference
+    try {
+      var saved = localStorage.getItem('vc-theme');
+      if (saved) window.__vcTheme = saved;
+    } catch (e) {}
+    if (window.matchMedia) {
+      try {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+          if (window.__vcTheme === 'system') apply();
+        });
+      } catch (e) {}
+    }
+    apply();
+  })();
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -770,34 +807,6 @@ html, body {
   (function () {
     var LANG_NAME = { en:'English', zh:'Chinese (Simplified)', ru:'Russian', ja:'Japanese', ko:'Korean', de:'German', es:'Spanish', it:'Italian', fr:'French', pt:'Portuguese' };
     window.__vcLang = 'en';
-
-    /* ── Theme (System / Light / Dark) ── */
-    window.__vcTheme = 'system';
-    function vcResolveTheme(t) {
-      if (t === 'system') {
-        return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
-      }
-      return t;
-    }
-    function vcApplyTheme() {
-      var resolved = vcResolveTheme(window.__vcTheme);
-      if (resolved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-      else document.documentElement.removeAttribute('data-theme');
-    }
-    window.vcSetTheme = function (t) {
-      window.__vcTheme = t;
-      vcApplyTheme();
-      if (window.__vcOnThemeChange) window.__vcOnThemeChange(t);
-    };
-    // react to system changes when in 'system' mode
-    if (window.matchMedia) {
-      try {
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
-          if (window.__vcTheme === 'system') vcApplyTheme();
-        });
-      } catch (e) {}
-    }
-    vcApplyTheme();
 
     var cache = {};           // `${lang}\u0000${text}` -> translated
     var origByNode = new WeakMap();
